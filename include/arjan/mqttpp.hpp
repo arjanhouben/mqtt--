@@ -159,10 +159,10 @@ struct subscription
 		);
 	}
 	
-	void handle_events()
+	void handle_events( std::chrono::milliseconds timeout = {} )
 	{
 		helper::handle_error(
-			mosquitto_loop( mosquitto_.get(), 0, 1 )
+			mosquitto_loop( mosquitto_.get(), timeout.count(), 1 )
 		);
 	}
 
