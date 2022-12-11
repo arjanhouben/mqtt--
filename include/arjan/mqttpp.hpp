@@ -18,6 +18,15 @@ struct mosquitto_ptr
 	template < typename T >
 	void operator()( T t ) noexcept
 	{
+		mosquitto_destroy( t );
+	}
+};
+
+struct mosquitto_disconnect_t
+{
+	template < typename T >
+	void operator()( T t ) noexcept
+	{
 		mosquitto_disconnect( t );
 	}
 };
@@ -55,6 +64,7 @@ struct init
 };
 
 using mosquitto_ptr = std::unique_ptr< mosquitto, helper::mosquitto_ptr >;
+using mosquitto_auto_disconnect = std::unique_ptr< mosquitto, helper::mosquitto_disconnect_t >;
 
 enum class retain
 {
@@ -97,7 +107,8 @@ struct host : init
 struct publisher
 {
 	explicit publisher( const host &h ) :
-		mosquitto_( helper::handle_error( mosquitto_new( nullptr, true, this ) ) )
+		mosquitto_( helper::handle_error( mosquitto_new( nullptr, true, this ) ) ),
+		disconnect_( nullptr )
 	{
 		helper::handle_error(
 			mosquitto_connect(
@@ -107,6 +118,7 @@ struct publisher
 				static_cast< int >( h.keep_alive_interval.count() )
 			)
 		);
+		disconnect_.reset( mosquitto_.get() );
 	}
 
 	template < typename T, size_t N >
@@ -128,6 +140,7 @@ struct publisher
 	
 	private:
 		mosquitto_ptr mosquitto_;
+		mosquitto_auto_disconnect disconnect_;
 };
 
 struct subscription
